@@ -1,6 +1,37 @@
 from collections     import OrderedDict, namedtuple
 from collections.abc import Mapping
 from io              import StringIO
+import gettext
+
+
+class PoFileTranslations(gettext.NullTranslations):
+	_entries = dict()
+
+	def _parse(self, fp):
+		parser = PoFileReader(PoFileEntry, fp)
+		for entry in parser:
+			self._entries[entry.id] = entry
+
+	def gettext(self, message):
+		if message in self._entries:
+			return self._entries[message].string
+		else:
+			return message
+
+	def ngettext(self, singular, plural, n):
+		# TODO: Implement proper plural support
+		if n == 1:
+			return self.gettext(singular)
+		else:
+			return self.gettext(plural)
+
+	def pgettext(self, context, message) -> str:
+		# TODO: Implement context support
+		return self.gettext(message)
+
+	def npgettext(self, context, msgid1, msgid2, n):
+		# TODO: Implement context support
+		return self.ngettext(msgid1, msgid2, n)
 
 
 class PoFileParseError(IOError):
