@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from io              import StringIO
 
 
-class ParseError(IOError):
+class PoFileParseError(IOError):
 	pass
 
 
@@ -29,7 +29,7 @@ def tokenize(lines):
 			elif len(line) == 2 or line[2].isspace():
 				yield Token(line[0:2], line[2:])
 			else:
-				raise ParseError("Unknown comment marker")
+				raise PoFileParseError("Unknown comment marker")
 			continue
 
 		# Keywords and strings
@@ -40,7 +40,7 @@ def tokenize(lines):
 					if line[i] == '"': break
 					i += 2 if line[i] == '\\' else 1
 				if i >= len(line):
-					raise ParseError("Unterminated string")
+					raise PoFileParseError("Unterminated string")
 				yield Token('string', line[1:i])
 				line = line[i+1:]
 			elif line[0].isalpha():
@@ -50,7 +50,7 @@ def tokenize(lines):
 				yield Token('keyword', line[:i])
 				line = line[i:]
 			else:
-				raise ParseError("Unknown character")
+				raise PoFileParseError("Unknown character")
 			line = line.lstrip()
 
 
@@ -81,7 +81,7 @@ class Reader:
 		# Comments
 		while self._peek.type.startswith('#'):
 			if self._peek.type in entry:
-				raise ParseError("Discontinuous comment")
+				raise PoFileParseError("Discontinuous comment")
 			key   = self._peek.type
 			lines = [self._next().value]
 			while self._peek.type == key:
@@ -91,18 +91,18 @@ class Reader:
 		# Keywords
 		while self._peek.type == 'keyword':
 			if self._peek.type in entry:
-				raise ParseError("Duplicate keyword")
+				raise PoFileParseError("Duplicate keyword")
 			key   = self._next().value
 			lines = []
 			while self._peek.type == 'string':
 				lines.append(self._next().value)
 			if not lines:
-				raise ParseError("No strings after keyword")
+				raise PoFileParseError("No strings after keyword")
 			entry[key] = tuple(lines)
 
 		# Empty
 		if self._peek.type not in ['nil', 'end']:
-			raise ParseError("Expected end of entry")
+			raise PoFileParseError("Expected end of entry")
 		while self._peek.type == 'nil':
 			self._next()
 
@@ -134,7 +134,7 @@ class Entry(Mapping):
 			chunks.append(string[i:j])
 			raw = cls.ESCAPES.get(string[j:j+2], None)
 			if raw is None:
-				raise ParseError("Unknown escape")
+				raise PoFileParseError("Unknown escape")
 			chunks.append(raw)
 			i = j + 2
 		chunks.append(string[i:])
@@ -145,7 +145,7 @@ class Entry(Mapping):
 
 	def __init__(self, entries):
 		if not all(k in self.DEFAULT for k in entries):
-			raise ParseError("Unknown comment or keyword")
+			raise PoFileParseError("Unknown comment or keyword")
 		self._dict = OrderedDict(entries)
 
 	def __getitem__(self, key):
@@ -176,9 +176,9 @@ class Entry(Mapping):
 			if not flag:
 				continue
 			if not all(c in self.LETTERS for c in flag):
-				raise ParseError("Unknown flag")
+				raise PoFileParseError("Unknown flag")
 			if flag in flags:
-				raise ParseError("Duplicate flag")
+				raise PoFileParseError("Duplicate flag")
 			flags.add(flag)
 		return flags
 
@@ -191,7 +191,7 @@ class Entry(Mapping):
 		elif len(entries) == 1:
 			return entries[0]
 		else:
-			raise ParseError("Multiple previous entries")
+			raise PoFileParseError("Multiple previous entries")
 
 	def _getkeyword(self, key):
 		return self.unescape(''.join(self[key]))
