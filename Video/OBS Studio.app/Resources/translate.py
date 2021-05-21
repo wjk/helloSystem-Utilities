@@ -7,27 +7,27 @@ class PoFileParseError(IOError):
 	pass
 
 
-Token = namedtuple('Token', ['type', 'value'])
+_Token = namedtuple('Token', ['type', 'value'])
 
-END = Token('end', None)
-NIL = Token('nil', None)
+_END = _Token('end', None)
+_NIL = _Token('nil', None)
 
 
-def tokenize(lines):
+def _tokenize(lines):
 	for line in lines:
 		line = line.lstrip().rstrip('\n')
 
 		# Empty lines
 		if not line or line.isspace():
-			yield NIL
+			yield _NIL
 			continue
 
 		# Comments
 		if line[0] == '#':
 			if len(line) == 1 or line[1].isspace():
-				yield Token('#', line[1:])
+				yield _Token('#', line[1:])
 			elif len(line) == 2 or line[2].isspace():
-				yield Token(line[0:2], line[2:])
+				yield _Token(line[0:2], line[2:])
 			else:
 				raise PoFileParseError("Unknown comment marker")
 			continue
@@ -41,13 +41,13 @@ def tokenize(lines):
 					i += 2 if line[i] == '\\' else 1
 				if i >= len(line):
 					raise PoFileParseError("Unterminated string")
-				yield Token('string', line[1:i])
+				yield _Token('string', line[1:i])
 				line = line[i+1:]
 			elif line[0].isalpha():
 				i = 0
 				while i < len(line) and line[i].isalpha():
 					i += 1
-				yield Token('keyword', line[:i])
+				yield _Token('keyword', line[:i])
 				line = line[i:]
 			else:
 				raise PoFileParseError("Unknown character")
@@ -60,13 +60,13 @@ class Reader:
 	def __init__(self, entry, file):
 		self.Entry   = entry
 		self.file    = file
-		self._tokens = tokenize(file)
+		self._tokens = _tokenize(file)
 
 		self._peek = None; self._next() # prime the pump
 		self._header = None # FIXME
 
 	def _next(self):
-		p, self._peek = self._peek, next(self._tokens, END)
+		p, self._peek = self._peek, next(self._tokens, _END)
 		return p
 
 	def __iter__(self):
