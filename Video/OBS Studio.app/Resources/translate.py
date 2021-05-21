@@ -54,7 +54,7 @@ def _tokenize(lines):
 			line = line.lstrip()
 
 
-class Reader:
+class PoFileReader:
 	__slots__ = ['Entry', 'file', '_header', '_peek', '_tokens']
 
 	def __init__(self, entry, file):
@@ -119,7 +119,7 @@ def _keyword(key):
 	return property(get)
 
 
-class Entry(Mapping):
+class PoFileEntry(Mapping):
 	ESCAPES = {
 		r'\"': '\"', r"\'": '\'', r'\\': '\\', r'\a': '\a', r'\b': '\b',
 		r'\f': '\f', r'\n': '\n', r'\r': '\r', r'\t': '\t', r'\v': '\v',
@@ -158,7 +158,7 @@ class Entry(Mapping):
 		return len(self._dict)
 
 	def __repr__(self):
-		return '{}.Entry({!r})'.format(__name__, self._dict)
+		return '{}.PoFileEntry({!r})'.format(__name__, self._dict)
 
 	def _getcomment(self, key):
 		return '\n'.join(v[1:] for v in self[key])
@@ -184,8 +184,8 @@ class Entry(Mapping):
 
 	@property
 	def previous(self):
-		# FIXME where to get Reader?
-		entries = list(Reader(type(self), StringIO(self._getcomment('#|'))))
+		# FIXME where to get PoFileReader?
+		entries = list(PoFileReader(type(self), StringIO(self._getcomment('#|'))))
 		if not entries:
 			return None
 		elif len(entries) == 1:
