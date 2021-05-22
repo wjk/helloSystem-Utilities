@@ -1,7 +1,7 @@
 from collections     import OrderedDict, namedtuple
 from collections.abc import Mapping
 from io              import StringIO
-import gettext
+import gettext, re
 
 
 class PoFileTranslations(gettext.NullTranslations):
@@ -76,7 +76,7 @@ def _tokenize(lines):
 				line = line[i+1:]
 			elif line[0].isalpha():
 				i = 0
-				while i < len(line) and (line[i].isalpha() or line[i] in ['_','[',']']):
+				while i < len(line) and (line[i].isalpha() or line[i].isdigit() or line[i] in ['_','[',']']):
 					i += 1
 				yield _Token('keyword', line[:i])
 				line = line[i:]
@@ -175,7 +175,8 @@ class PoFileEntry(Mapping):
 	DEFAULT = OrderedDict((k, ()) for k in DEFAULT)
 
 	def __init__(self, entries):
-		if not all(k in self.DEFAULT for k in entries):
+		is_indexed_msgstr = lambda x: re.match(r"msgstr\[\d+\]", x) is not None
+		if not all(k in self.DEFAULT or is_indexed_msgstr(k) for k in entries):
 			raise PoFileParseError("Unknown comment or keyword")
 		self._dict = OrderedDict(entries)
 
