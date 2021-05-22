@@ -259,7 +259,6 @@ class PoFileEntry(Mapping):
 	def _getkeyword(self, key):
 		return self.unescape(''.join(self[key]))
 
-	# FIXME domain, plurals
 	context = _keyword('msgctxt')
 	id      = _keyword('msgid')
 	string  = _keyword('msgstr')
