@@ -208,7 +208,7 @@ class PoFileEntry(Mapping):
 		self._dict = OrderedDict(entries)
 
 	def __getitem__(self, key):
-		return self._dict.get(key, self.DEFAULT[key])
+		return self._dict.get(key, ())
 
 	def __iter__(self):
 		return iter(self._dict)
