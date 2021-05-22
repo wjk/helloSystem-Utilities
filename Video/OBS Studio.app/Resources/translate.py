@@ -76,7 +76,7 @@ def _tokenize(lines):
 				line = line[i+1:]
 			elif line[0].isalpha():
 				i = 0
-				while i < len(line) and line[i].isalpha():
+				while i < len(line) and (line[i].isalpha() or line[i] in ['_','[',']']):
 					i += 1
 				yield _Token('keyword', line[:i])
 				line = line[i:]
@@ -171,7 +171,7 @@ class PoFileEntry(Mapping):
 		chunks.append(string[i:])
 		return ''.join(chunks)
 
-	DEFAULT = ['#', '#.', '#,', '#|', 'msgctxt', 'msgid', 'msgstr']
+	DEFAULT = ['#', '#.', '#,', '#|', 'msgctxt', 'msgid', 'msgstr','msgstr_plural']
 	DEFAULT = OrderedDict((k, ()) for k in DEFAULT)
 
 	def __init__(self, entries):
@@ -231,3 +231,4 @@ class PoFileEntry(Mapping):
 	context = _keyword('msgctxt')
 	id      = _keyword('msgid')
 	string  = _keyword('msgstr')
+	plural_string = _keyword('msgstr_plural')
