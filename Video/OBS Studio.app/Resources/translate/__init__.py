@@ -20,7 +20,7 @@ class PoFileTranslations(gettext.NullTranslations):
 			if entry.plural_id is not None:
 				self._plural_entries[entry.plural_id] = entry
 
-		meta_entry = self._entries['']
+		meta_entry = self._entries.get('', None)
 		if meta_entry is not None:
 			del self._entries['']
 
