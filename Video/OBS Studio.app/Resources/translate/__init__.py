@@ -1,16 +1,35 @@
 from collections     import OrderedDict, namedtuple
 from collections.abc import Mapping
 from io              import StringIO
+from .plural         import c2py
 import gettext, re
 
 
 class PoFileTranslations(gettext.NullTranslations):
 	_entries = dict()
+	_plural_entries = dict()
+	_info = dict()
+
+	def info(self):
+		return self._info
 
 	def _parse(self, fp):
 		parser = PoFileReader(PoFileEntry, fp)
 		for entry in parser:
 			self._entries[entry.id] = entry
+			if entry.plural_id is not None:
+				self._plural_entries[entry.plural_id] = entry
+
+		meta_entry = self._entries['']
+		if meta_entry is not None:
+			del self._entries['']
+
+			for line in meta_entry.string.split('\n'):
+				parts = line.split(':')
+				if len(parts) < 2:
+					continue
+
+				self._info[parts[0].strip()] = ' : '.join(x.strip() for x in parts[1:])
 
 	def gettext(self, message):
 		if message in self._entries:
@@ -19,11 +38,23 @@ class PoFileTranslations(gettext.NullTranslations):
 			return message
 
 	def ngettext(self, singular, plural, n):
-		# TODO: Implement proper plural support
 		if n == 1:
-			return self.gettext(singular)
+			if singular in self._entries:
+				return self._entries[singular].string
+			else:
+				return singular
+
+		if plural in self._plural_entries:
+			form_directive = self._info['Plural-Forms']
+			processed_form_directive = re.sub(r'.*plural=([^;\r\n]+)(;.*|$)', r'\1', form_directive)
+			if processed_form_directive == '' or processed_form_directive == form_directive:
+				raise RuntimeError('Malformed Plural-Forms directive')
+
+			compiled_rule = c2py(processed_form_directive)
+			string_index = compiled_rule(n)
+			return self._plural_entries[plural].plural_form(string_index)
 		else:
-			return self.gettext(plural)
+			return plural
 
 	def pgettext(self, context, message) -> str:
 		# TODO: Implement context support
@@ -171,7 +202,7 @@ class PoFileEntry(Mapping):
 		chunks.append(string[i:])
 		return ''.join(chunks)
 
-	DEFAULT = ['#', '#.', '#,', '#|', 'msgctxt', 'msgid', 'msgstr','msgstr_plural']
+	DEFAULT = ['#', '#.', '#,', '#|', 'msgctxt', 'msgid', 'msgstr','msgid_plural']
 	DEFAULT = OrderedDict((k, ()) for k in DEFAULT)
 
 	def __init__(self, entries):
@@ -232,4 +263,7 @@ class PoFileEntry(Mapping):
 	context = _keyword('msgctxt')
 	id      = _keyword('msgid')
 	string  = _keyword('msgstr')
-	plural_string = _keyword('msgstr_plural')
+	plural_id = _keyword('msgid_plural')
+
+	def plural_form(self, n):
+		return self._getkeyword('msgstr[' + str(n) + ']')
