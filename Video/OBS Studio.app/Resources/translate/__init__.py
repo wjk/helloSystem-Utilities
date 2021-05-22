@@ -39,22 +39,18 @@ class PoFileTranslations(gettext.NullTranslations):
 
 	def ngettext(self, singular, plural, n):
 		if n == 1:
-			if singular in self._entries:
-				return self._entries[singular].string
-			else:
-				return singular
-
-		if plural in self._plural_entries:
-			form_directive = self._info['Plural-Forms']
-			processed_form_directive = re.sub(r'.*plural=([^;\r\n]+)(;.*|$)', r'\1', form_directive)
-			if processed_form_directive == '' or processed_form_directive == form_directive:
-				raise RuntimeError('Malformed Plural-Forms directive')
-
-			compiled_rule = c2py(processed_form_directive)
-			string_index = compiled_rule(n)
-			return self._plural_entries[plural].plural_form(string_index)
+			entry = self._entries[singular]
 		else:
-			return plural
+			entry = self._plural_entries[plural]
+
+		form_directive = self._info['Plural-Forms']
+		processed_form_directive = re.sub(r'.*plural=([^;\r\n]+)(;.*|$)', r'\1', form_directive)
+		if processed_form_directive == '' or processed_form_directive == form_directive:
+			raise RuntimeError('Malformed Plural-Forms directive')
+
+		compiled_rule = c2py(processed_form_directive)
+		string_index = compiled_rule(n)
+		return entry.plural_form(string_index)
 
 	def pgettext(self, context, message) -> str:
 		# TODO: Implement context support
