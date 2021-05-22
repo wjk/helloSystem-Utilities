@@ -52,7 +52,7 @@ class PoFileTranslations(gettext.NullTranslations):
 		string_index = compiled_rule(n)
 		return entry.plural_form(string_index)
 
-	def pgettext(self, context, message) -> str:
+	def pgettext(self, context, message):
 		# TODO: Implement context support
 		return self.gettext(message)
 
